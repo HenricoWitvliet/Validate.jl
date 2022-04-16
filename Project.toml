@@ -1,0 +1,8 @@
+name = "Validate"
+uuid = "c2406b03-ef8b-4b09-9d74-7c61f7c12e00"
+authors = ["Henrico <hwitvliet@gmail.com>"]
+version = "0.1.0"
+
+[deps]
+DataFramesMeta = "1313f7d8-7da2-5740-9ea0-a2ca25f37964"
+YAML = "ddb6d928-2868-570f-bddf-ab3f9cf99eb6"
