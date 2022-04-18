@@ -1,12 +1,11 @@
+# set fileencoding=utf-8
 module Validate
 
 import YAML
-using DataFramesMeta
 
 export read_rules
 
-df = DataFrame()
-global dfI
+OPERATORS = [Symbol(x) for x in ["<", "<=", "==", ">", ">=", "!=", "!", "&", "|", "+", "-", "*", "/", "%", "÷", "^"]]
 
 function read_rules(filename)
     rules = YAML.load_file(filename)["rules"]
@@ -16,28 +15,49 @@ function read_rules(filename)
     return rules
 end
 
-function transform_rule(rule, symbols)
+function transform_expr(rule, symbols, vectorwise)
     for (idx, arg) in enumerate(rule.args)
       if (typeof(arg) == Symbol) & (arg in symbols)
-        rule.args[idx] = QuoteNode(arg)
+        rule.args[idx] = :(df.$arg)
+        vectorwise = true
       elseif typeof(arg) == Expr
-        rule.args[idx] = transform_rule(arg, symbols)
+        rule.args[idx], vw = transform_expr(arg, symbols, vectorwise)
+        vectorwise = vectorwise | vw
+      end
+    end
+    return rule, vectorwise
+end
+
+function transform_expr_ops(rule)
+    for (idx, arg) in enumerate(rule.args)
+      if (typeof(arg) == Symbol) & (arg in OPERATORS)
+        rule.args[idx] = Symbol("." * string(arg))
+      elseif typeof(arg) == Expr
+        rule.args[idx] = transform_expr_ops(arg)
       end
     end
     return rule
 end
 
+function transform_rule(rule, symbols)
+    res, vectorwise = transform_expr(rule, symbols, false)
+    if vectorwise
+      res = transform_expr_ops(res)
+    end
+    return :( df -> begin $res end)
+end
+
+
 function confront(df, rules)
-    global dfI
-    dfI = df
     symbols = [Symbol(x) for x in names(df)]
     res = Dict()
     for rule in rules
-        expr = transform_rule(rule["expr"], symbols)
+      rawrule = copy(rule["expr"])
+        expr = transform_rule(rawrule, symbols)
         label = rule["label"]
-        res[label] = eval(:(@with(dfI, @byrow $(expr))))
+        f = eval(expr)
+        res[label] = @eval $f($df)
     end
-    dfI = DataFrame()
     return res
 end
 
