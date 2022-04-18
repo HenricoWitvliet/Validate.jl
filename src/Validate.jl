@@ -2,6 +2,7 @@
 module Validate
 
 import YAML
+using Statistics
 
 export read_rules
 
@@ -48,7 +49,7 @@ function transform_rule(rule, symbols)
 end
 
 
-function confront(df, rules)
+function confront(rules, df)
     symbols = [Symbol(x) for x in names(df)]
     res = Dict()
     for rule in rules
