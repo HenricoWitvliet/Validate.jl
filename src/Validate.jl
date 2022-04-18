@@ -2,6 +2,7 @@
 module Validate
 
 import YAML
+using DataFrames
 using Statistics
 
 export read_rules
@@ -59,8 +60,23 @@ function confront(rules, df)
         f = eval(expr)
         res[label] = @eval $f($df)
     end
-    return res
+    return Dict(:rules => rules, :out => res)
 end
 
+function summary(confront_out)
+    rules = confront_out[:rules]
+    out = confront_out[:out]
+    labels = [rule["label"] for rule in rules]
+    res = DataFrame(
+                    name = labels,
+                    items = [length(out[label]) for label in labels],
+                    passes = [sum(skipmissing(out[label])) for label in labels],
+                    fails = [sum(skipmissing(.!out[label])) for label in labels],
+                    nNa = [sum(ismissing.(out[label])) for label in labels],
+                    expression = [rule["expr"] for rule in rules]
+                         )
+    return res
+
+end
 
 end # module
