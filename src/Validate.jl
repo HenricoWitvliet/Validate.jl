@@ -5,7 +5,8 @@ import YAML
 using DataFrames
 using Statistics
 
-export read_rules
+export read_rules, confront, summary
+
 
 OPERATORS = [Symbol(x) for x in ["<", "<=", "==", ">", ">=", "!=", "!", "&", "|", "+", "-", "*", "/", "%", "÷", "^"]]
 
@@ -78,5 +79,15 @@ function summary(confront_out)
     return res
 
 end
+
+# helper functions
+#
+nrow(df) = size(df)[1]
+#is.na(vect) = ismissing(vect)
+module is
+na(vect) = ismissing.(vect)
+character(vect) = (isa(vect, Vector{Union{String, Missing}})) | isa(vect, Vector{String}) | isa(vect, Vector{Missing})
+end
+
 
 end # module
