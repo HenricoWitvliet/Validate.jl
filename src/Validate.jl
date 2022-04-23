@@ -5,6 +5,12 @@ import YAML
 using DataFrames
 using Dates
 using Statistics
+using TOML
+
+const PACKAGE_VERSION = let
+    project = TOML.parsefile(joinpath(pkgdir(@__MODULE__), "Project.toml"))
+    VersionNumber(project["version"])
+end
 
 export read_rules, confront, summary, satisfying, violating, lacking, Validator, Validation
 
@@ -46,6 +52,21 @@ Validator = Vector{Rule}
 struct Validation
     rules::Validator
     out::Dict{Any, Any}
+end
+
+
+function validator(exprs...)
+    res = Validator()
+    for (idx, expr) in enumerate(exprs)
+        rule = Rule("V$idx"
+                    , ""
+                    , expr
+                    , Dict("language" => "Validate.jl $PACKAGE_VERSION", "severity" => "error")
+                    , Dates.now()
+                    , "generated via cli")
+        push!(res, rule)
+    end
+    return res
 end
 
 
