@@ -12,7 +12,7 @@ const PACKAGE_VERSION = let
     VersionNumber(project["version"])
 end
 
-export read_rules, confront, summary, satisfying, violating, lacking, Validator, Validation
+export validator, read_rules, confront, summary, satisfying, violating, lacking, Rule, Validator, Validation
 
 
 OPERATORS = [Symbol(x) for x in ["<", "<=", "==", ">", ">=", "!=", "!", "&", "|", "+", "-", "*", "/", "%", "÷", "^"]]
@@ -29,7 +29,7 @@ end
 """
     Validator
 
-    Vector of Dicts to hold validation rules.
+    Vector of Rules to hold validation rules.
 
     Rules have at least a `name` to uniquely identify a rule and an `expr`
     holding the definition of a rule as a Julia expression. 
@@ -43,11 +43,11 @@ Validator = Vector{Rule}
 """
     Validation
 
-    Struct to hold both the rules and the result of a confrontation.
-    Fields are
+Struct to hold both the rules and the result of a confrontation.
+Fields are
 
-    - rules: Validator-type holding all used rules
-    - out: Dict containing the result of applying each rule to a DataFrame
+- rules: Validator-type holding all used rules
+- out: Dict containing the result of applying each rule to a DataFrame
 """
 struct Validation
     rules::Validator
@@ -55,6 +55,25 @@ struct Validation
 end
 
 
+"""
+    validator(exprs...; kwexprs...)
+
+Create a vector of rules from the command line.
+
+Each argument defines a rule. A regular argument must be an expression, which 
+gets named V1, V2, etc. A keyword argument uses the keyword for the name of
+the rule and the value must again be an expression.
+
+Returns a Validator.
+
+# Examples
+```julia-repl
+julia> using Validate
+julia> myrules = Validate.validator(:(speed >= 0), :(distance >= 0))
+# or
+julia> myrules = Validate.validator(speedpos = :(speed >= 0), distpos = :(distance >= 0))
+```
+"""
 function validator(exprs...; kwexprs...)
     res = Validator()
     for (idx, expr) in enumerate(exprs)
@@ -85,12 +104,12 @@ end
 Read a Validate rule-file in yaml-format.
 
 Returns a list of dicts where each element is a rule. The key `expr` contains
-the julia-ast of the rule
+the julia-ast of the rule.
 
 # Examples
 ```julia-repl
-using Validate
-myrules = Validate.read_rules("myrules.yaml")
+julia> using Validate
+julia> myrules = Validate.read_rules("myrules.yaml")
 ```
 """
 function read_rules(filename::String)::Validator
@@ -152,10 +171,10 @@ the result. The `name` of the rule is used as the key in this dict
 
 # Example
 ```julia-repl
-using DataFrames, Validate
-df = DataFrame(speed=[1, 2, 3], distance=[10, 11, 100])
-rules = Validate.read_rules("myrules.yaml")
-result = Validate.confront(rules, df)
+julia> using DataFrames, Validate
+julia> df = DataFrame(speed=[1, 2, 3], distance=[10, 11, 100])
+julia> rules = Validate.read_rules("myrules.yaml")
+julia> result = Validate.confront(rules, df)
 ```
 """
 function confront(df::AbstractDataFrame, rules::Validator)
