@@ -1,4 +1,4 @@
-# set fileencoding=utf-8
+# set fileencoding=utf-8;sw=4;ts=4;expandtab
 module Validate
 
 import YAML
@@ -55,10 +55,19 @@ struct Validation
 end
 
 
-function validator(exprs...)
+function validator(exprs...; kwexprs...)
     res = Validator()
     for (idx, expr) in enumerate(exprs)
         rule = Rule("V$idx"
+                    , ""
+                    , expr
+                    , Dict("language" => "Validate.jl $PACKAGE_VERSION", "severity" => "error")
+                    , Dates.now()
+                    , "generated via cli")
+        push!(res, rule)
+    end
+    for (name, expr) in kwexprs
+        rule = Rule(string(name)
                     , ""
                     , expr
                     , Dict("language" => "Validate.jl $PACKAGE_VERSION", "severity" => "error")
