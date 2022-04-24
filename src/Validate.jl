@@ -12,10 +12,22 @@ const PACKAGE_VERSION = let
     VersionNumber(project["version"])
 end
 
-export validator, read_rules, confront, summary, satisfying, violating, lacking, Rule, Validator, Validation
+export validator,
+    read_rules,
+    confront,
+    summary,
+    satisfying,
+    violating,
+    lacking,
+    Rule,
+    Validator,
+    Validation
 
 
-OPERATORS = [Symbol(x) for x in ["<", "<=", "==", ">", ">=", "!=", "!", "&", "|", "+", "-", "*", "/", "%", "÷", "^"]]
+OPERATORS = [
+    Symbol(x) for x in
+    ["<", "<=", "==", ">", ">=", "!=", "!", "&", "|", "+", "-", "*", "/", "%", "÷", "^"]
+]
 
 struct Rule
     name::String
@@ -29,14 +41,15 @@ end
 """
     Validator
 
-    Vector of Rules to hold validation rules.
+Vector of Rules to hold validation rules.
 
-    Rules have at least a `name` to uniquely identify a rule and an `expr`
-    holding the definition of a rule as a Julia expression. 
-    An expression is given in terms of equalities or inequalities between columns of a
-    DataFrame.  The result of the expression must be a boolean vector. The collection of
-    allowed operations is given in `OPERATORS`. Furthermore, the function `is.na` can be
-    used. It returns true for any element which is Julia-missing.
+Rules have at least a `name` to uniquely identify a rule and an `expr` holding
+the definition of a rule as a Julia expression. 
+An expression is given in terms of equalities or inequalities between columns
+of a DataFrame.  The result of the expression must be a boolean vector. The
+collection of allowed operations is given in `OPERATORS`. Furthermore, the
+function `is.na` can be used. It returns true for any element which is
+Julia-missing.
 """
 Validator = Vector{Rule}
 
@@ -51,7 +64,7 @@ Fields are
 """
 struct Validation
     rules::Validator
-    out::Dict{Any, Any}
+    out::Dict{Any,Any}
 end
 
 
@@ -77,21 +90,25 @@ julia> myrules = Validate.validator(speedpos = :(speed >= 0), distpos = :(distan
 function validator(exprs...; kwexprs...)
     res = Validator()
     for (idx, expr) in enumerate(exprs)
-        rule = Rule("V$idx"
-                    , ""
-                    , expr
-                    , Dict("language" => "Validate.jl $PACKAGE_VERSION", "severity" => "error")
-                    , Dates.now()
-                    , "generated via cli")
+        rule = Rule(
+            "V$idx",
+            "",
+            expr,
+            Dict("language" => "Validate.jl $PACKAGE_VERSION", "severity" => "error"),
+            Dates.now(),
+            "generated via cli",
+        )
         push!(res, rule)
     end
     for (name, expr) in kwexprs
-        rule = Rule(string(name)
-                    , ""
-                    , expr
-                    , Dict("language" => "Validate.jl $PACKAGE_VERSION", "severity" => "error")
-                    , Dates.now()
-                    , "generated via cli")
+        rule = Rule(
+            string(name),
+            "",
+            expr,
+            Dict("language" => "Validate.jl $PACKAGE_VERSION", "severity" => "error"),
+            Dates.now(),
+            "generated via cli",
+        )
         push!(res, rule)
     end
     return res
@@ -117,36 +134,41 @@ function read_rules(filename::String)::Validator
     yaml = YAML.load_file(filename)["rules"]
     for rule in yaml
         rule["expr"] = Meta.parse(rule["expr"])
-        push!(rules, Rule(rule["name"]
-                   , rule["label"]
-                   , rule["expr"]
-                   , rule["meta"]
-                   , rule["created"]
-                   , rule["description"]))
+        push!(
+            rules,
+            Rule(
+                rule["name"],
+                rule["label"],
+                rule["expr"],
+                rule["meta"],
+                rule["created"],
+                rule["description"],
+            ),
+        )
     end
     return rules
 end
 
 function transform_expr(rule, symbols, vectorwise)
     for (idx, arg) in enumerate(rule.args)
-      if (typeof(arg) == Symbol) & (arg in symbols)
-        rule.args[idx] = :(df.$arg)
-        vectorwise = true
-      elseif typeof(arg) == Expr
-        rule.args[idx], vw = transform_expr(arg, symbols, vectorwise)
-        vectorwise = vectorwise | vw
-      end
+        if (typeof(arg) == Symbol) & (arg in symbols)
+            rule.args[idx] = :(df.$arg)
+            vectorwise = true
+        elseif typeof(arg) == Expr
+            rule.args[idx], vw = transform_expr(arg, symbols, vectorwise)
+            vectorwise = vectorwise | vw
+        end
     end
     return rule, vectorwise
 end
 
 function transform_expr_ops(rule)
     for (idx, arg) in enumerate(rule.args)
-      if (typeof(arg) == Symbol) & (arg in OPERATORS)
-        rule.args[idx] = Symbol("." * string(arg))
-      elseif typeof(arg) == Expr
-        rule.args[idx] = transform_expr_ops(arg)
-      end
+        if (typeof(arg) == Symbol) & (arg in OPERATORS)
+            rule.args[idx] = Symbol("." * string(arg))
+        elseif typeof(arg) == Expr
+            rule.args[idx] = transform_expr_ops(arg)
+        end
     end
     return rule
 end
@@ -154,9 +176,11 @@ end
 function transform_rule(rule, symbols)
     res, vectorwise = transform_expr(rule, symbols, false)
     if vectorwise
-      res = transform_expr_ops(res)
+        res = transform_expr_ops(res)
     end
-    return :( df -> begin $res end)
+    return :(df -> begin
+        $res
+    end)
 end
 
 
@@ -181,7 +205,7 @@ function confront(df::AbstractDataFrame, rules::Validator)
     symbols = [Symbol(x) for x in names(df)]
     res = Dict()
     for rule in rules
-      rawrule = copy(rule.expr)
+        rawrule = copy(rule.expr)
         expr = transform_rule(rawrule, symbols)
         name = rule.name
         f = eval(expr)
@@ -200,13 +224,13 @@ function summary(confront_out::Validation)
     out = confront_out.out
     names = [rule.name for rule in rules]
     res = DataFrame(
-                    name = names,
-                    items = [length(out[name]) for name in names],
-                    passes = [sum(skipmissing(out[name])) for name in names],
-                    fails = [sum(skipmissing(.!out[name])) for name in names],
-                    nNa = [sum(ismissing.(out[name])) for name in names],
-                    expression = [rule.expr for rule in rules]
-                         )
+        name = names,
+        items = [length(out[name]) for name in names],
+        passes = [sum(skipmissing(out[name])) for name in names],
+        fails = [sum(skipmissing(.!out[name])) for name in names],
+        nNa = [sum(ismissing.(out[name])) for name in names],
+        expression = [rule.expr for rule in rules],
+    )
     return res
 
 end
@@ -237,7 +261,11 @@ satisfied.  If false, then any expression with value `missing` is counted as vio
 
 Returns a DataFrame
 """
-function satisfying(df::AbstractDataFrame, confront_out::Validation, include_missing = false)
+function satisfying(
+    df::AbstractDataFrame,
+    confront_out::Validation,
+    include_missing = false,
+)
     out = confront_out.out
     if length(out) == 0
         return df
@@ -256,7 +284,7 @@ satisfied.  If false, then any expression with value `missing` is counted as vio
 
 Returns a DataFrame
 """
-function satisfying(df::AbstractDataFrame, rules::Validator, include_missing=false)
+function satisfying(df::AbstractDataFrame, rules::Validator, include_missing = false)
     cf = confront(df, rules)
     return satisfying(df, cf, include_missing)
 end
@@ -271,7 +299,7 @@ satisfied.  If false, then any expression with value `missing` is counted as vio
 
 Returns a DataFrame
 """
-function violating(df::AbstractDataFrame, confront_out::Validation, include_missing=false)
+function violating(df::AbstractDataFrame, confront_out::Validation, include_missing = false)
     out = confront_out.out
     if length(out) == 0
         return similar(df, 0)
@@ -290,7 +318,7 @@ satisfied.  If false, then any expression with value `missing` is counted as vio
 
 Returns a DataFrame
 """
-function violating(df::AbstractDataFrame, rules::Validator, include_missing=false)
+function violating(df::AbstractDataFrame, rules::Validator, include_missing = false)
     cf = confront(df, rules)
     return violating(df, cf, include_missing)
 end
@@ -330,7 +358,10 @@ end
 nrow(df) = size(df)[1]
 module is
 na(vect) = ismissing.(vect)
-character(vect) = (isa(vect, Vector{Union{String, Missing}})) | isa(vect, Vector{String}) | isa(vect, Vector{Missing})
+character(vect) =
+    (isa(vect, Vector{Union{String,Missing}})) |
+    isa(vect, Vector{String}) |
+    isa(vect, Vector{Missing})
 end
 
 

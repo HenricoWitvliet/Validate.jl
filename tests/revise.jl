@@ -7,14 +7,14 @@ using Revise, Jive
 using Validate
 
 trigger = function (path)
-    printstyled("changed ", color=:cyan)
+    printstyled("changed ", color = :cyan)
     println(path)
     revise()
-    runtests(@__DIR__, skip=["revise.jl"])
+    runtests(@__DIR__, skip = ["revise.jl"])
 end
 
-watch(trigger, @__DIR__, sources=[pathof(Validate)])
+watch(trigger, @__DIR__, sources = [pathof(Validate)])
 trigger("")
 
-Base.JLOptions().isinteractive==0 && wait()
+Base.JLOptions().isinteractive == 0 && wait()
 
