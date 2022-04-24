@@ -239,6 +239,9 @@ Returns a DataFrame
 """
 function satisfying(df::AbstractDataFrame, confront_out::Validation, include_missing = false)
     out = confront_out.out
+    if length(out) == 0
+        return df
+    end
     select = _satisfying(out, include_missing)
     return df[select, :]
 end
@@ -270,6 +273,9 @@ Returns a DataFrame
 """
 function violating(df::AbstractDataFrame, confront_out::Validation, include_missing=false)
     out = confront_out.out
+    if length(out) == 0
+        return similar(df, 0)
+    end
     select = _satisfying(out, include_missing)
     return df[.!select, :]
 end
@@ -297,6 +303,9 @@ have one or more missing values for the rules
 """
 function lacking(df::AbstractDataFrame, confront_out::Validation)
     out = confront_out.out
+    if length(out) == 0
+        return df
+    end
     names = collect(keys(out))
     select = ismissing.(out[names[1]])
     for name in names[2:end]
