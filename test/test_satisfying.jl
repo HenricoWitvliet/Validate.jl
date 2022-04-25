@@ -16,6 +16,10 @@ res = Validate.satisfying(df, rules)
 
 @test isequal(res, DataFrame(x=[1], y=[2]))
 
+res = Validate.satisfying(df, rules, true)
+
+@test isequal(res, DataFrame(x=[1], y=[2]))
+
 cf = Validate.confront(df, rules)
 
 res2 = Validate.satisfying(df, cf)
