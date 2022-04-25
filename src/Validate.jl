@@ -19,6 +19,7 @@ export validator,
     satisfying,
     violating,
     lacking,
+    is,
     Rule,
     Validator,
     Validation
@@ -357,6 +358,8 @@ end
 #
 nrow(df) = size(df)[1]
 module is
+export na
+
 na(vect) = ismissing.(vect)
 character(vect) =
     (isa(vect, Vector{Union{String,Missing}})) |
