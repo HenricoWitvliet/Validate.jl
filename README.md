@@ -3,7 +3,6 @@ Validate.jl
 
 [![codecov](https://codecov.io/gh/HenricoWitvliet/Validate.jl/branch/master/graph/badge.svg?token=24VLOTY9M0)](https://codecov.io/gh/HenricoWitvliet/Validate.jl)
 ![GitHub CI](https://github.com/HenricoWitvliet/Validate.jl/actions/workflows/ci.yml/badge.svg)
-[![][docs-dev-img]][docs-dev-url]
 
 This package contains a subset of the R-package `Validate` (see
 [Validate](https://github.com/data-cleaning/validate)) using pure Julia. The
